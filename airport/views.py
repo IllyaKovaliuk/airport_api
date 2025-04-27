@@ -1,7 +1,10 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
 
 from airport.models import Airport, Route, Airplane, AirplaneType, Flight, Ticket, Order
+from airport.permissions import IsAdminOrIsAuthenticatedReadOnly, IsAdminOrReadOnly
 from airport.serializers import AirportSerializer, AirportRetrieveSerializer, AirportListSerializer, \
     RouteListSerializer, RouteRetrieveSerializer, RoutesSerializer, AirplaneListSerializer, AirplaneRetrieveSerializer, \
     AirplaneSerializer, AirplaneTypeSerializer, AirplaneTypeListSerializer, AirplaneTypeRetrieveSerializer, \
@@ -10,6 +13,8 @@ from airport.serializers import AirportSerializer, AirportRetrieveSerializer, Ai
 
 class AirportViewSet(viewsets.ModelViewSet):
     queryset = Airport.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -21,6 +26,8 @@ class AirportViewSet(viewsets.ModelViewSet):
 
 class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -30,8 +37,16 @@ class RouteViewSet(viewsets.ModelViewSet):
         return RoutesSerializer
 
 
+    # def get_permissions(self):
+    #     if self.action in ["list", "retrieve"]:
+    #         return (IsAuthenticated(),)
+    #
+    #     return super().get_permissions()
+
 class AirplaneViewSet(viewsets.ModelViewSet):
     queryset = Airplane.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -43,6 +58,9 @@ class AirplaneViewSet(viewsets.ModelViewSet):
 
 class AirplaneTypeViewSet(viewsets.ModelViewSet):
     queryset = AirplaneType.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [IsAdminOrReadOnly]
+
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -54,6 +72,8 @@ class AirplaneTypeViewSet(viewsets.ModelViewSet):
 
 class FlightViewSet(viewsets.ModelViewSet):
     queryset = Flight.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [IsAdminOrIsAuthenticatedReadOnly]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -64,10 +84,23 @@ class FlightViewSet(viewsets.ModelViewSet):
 
 
 class TicketViewSet(viewsets.ModelViewSet):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [IsAdminOrReadOnly]
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
 
+    def get_queryset(self):
+        return self.queryset.filter(order__user=self.request.user)
+
 
 class OrderViewSet(viewsets.ModelViewSet):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [IsAuthenticated]
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from airport.models import Airport, Route, Airplane, AirplaneType, Flight, Ticket, Order
+from user.models import User
 
 
 class AirportSerializer(serializers.ModelSerializer):
@@ -96,6 +97,7 @@ class AirplaneTypeListSerializer(AirplaneTypeSerializer):
 
 
 class FlightSerializer(serializers.ModelSerializer):
+    status = serializers.ReadOnlyField()
     class Meta:
         model = Flight
         fields = "__all__"
@@ -111,17 +113,35 @@ class FlightListSerializer(FlightSerializer):
     route_source = serializers.CharField(source="route.source")
     route_destination = serializers.CharField(source="route.destination")
     plane = serializers.CharField(source="airplane.name")
+    status = serializers.ReadOnlyField()
 
     class Meta:
         model = Flight
-        fields = ("id", "departure_time", "arrival_time", "route_source", "route_destination", "plane")
+        fields = ("id", "departure_time", "arrival_time", "route_source", "route_destination", "plane", "status")
+
+
+
 
 
 class TicketSerializer(serializers.ModelSerializer):
     airplane = serializers.CharField(source="flight.airplane.name", read_only=True)
+    flight = serializers.PrimaryKeyRelatedField(
+        queryset=Flight.objects.all()
+    )
+    # order = OrderSerializer(read_only=True)
+    user = serializers.SlugRelatedField(
+        slug_field="username",
+        read_only=True,
+        source="order.user"
+    )
+    user_order_token = serializers.SlugRelatedField(
+        slug_field="token",
+        read_only=True,
+        source="order"
+    )
     class Meta:
         model = Ticket
-        fields = ("id", "row", "seat", "airplane", "flight", "order")
+        fields = ("id", "row", "seat", "airplane", "flight", "order", "user", "user_order_token")
 
         validators = [
             UniqueTogetherValidator(
@@ -136,6 +156,11 @@ class TicketSerializer(serializers.ModelSerializer):
         if not flight:
             raise serializers.ValidationError({"flight": "Flight is required."})
 
+        if flight.status in ['finished', 'active']:
+            raise serializers.ValidationError({
+                "flight": f"Cannot book ticket for a flight that is {flight.status}."
+            })
+
         airplane = flight.airplane  # доступ до літака через рейс
 
         Ticket.validate_seats(
@@ -148,10 +173,22 @@ class TicketSerializer(serializers.ModelSerializer):
         return attrs
 
 
+
+
+
 class OrderSerializer(serializers.ModelSerializer):
+    # tickets = TicketSerializer(many=True, read_only=False, allow_empty=False)
+    token = serializers.ReadOnlyField()
+    user = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field="username",
+    )
     class Meta:
         model = Order
-        fields = "__all__"
+        fields = ("id", "token", "user")
 
-
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            self.fields['user'].queryset = User.objects.filter(id=request.user.id)

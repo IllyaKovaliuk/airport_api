@@ -1,6 +1,10 @@
+import hashlib
+
 from django.db import models
 from django.db.models import UniqueConstraint
+from django.utils.timezone import now
 from rest_framework.exceptions import ValidationError
+from datetime import datetime
 
 from airport_project import settings
 from user.models import User
@@ -53,15 +57,30 @@ class Flight(models.Model):
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
 
+    @property
+    def status(self) -> None:
+        current_time = now()
+        if self.arrival_time < current_time:
+            return 'finished'
+        elif self.departure_time > current_time:
+            return 'not started'
+        else:
+            return 'active'
+
+
+
     def __str__(self):
-        return f"Flight from {self.route.source} to {self.route.destination} "
+        return f"Flight from {self.route.source} to {self.route.destination} with id: {self.route.id} "
 
 
 class Ticket(models.Model):
     row = models.IntegerField()
     seat = models.IntegerField()
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
-    order = models.ForeignKey('Order', on_delete=models.CASCADE)
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name='tickets')
+
+    # class Meta:
+    #     ordering = ["-created_at"]
 
     constraints = [
         UniqueConstraint(fields=['seat', 'flight'], name='unique_ticket_seat_flight')
@@ -82,6 +101,19 @@ class Ticket(models.Model):
                 }
             )
 
+    def validate_flight(self):
+        if not Flight.objects.filter(id=self.flight_id).exists():
+            raise ValidationError(
+                {
+                    'flight': f"Flight {self.flight_id} does not exist"
+                }
+            )
+        elif Flight.status in ['finished', 'active']:
+            raise ValidationError(
+                {
+                    'flight': f"Flight finished or active now"
+                }
+            )
 
     def clean(self):
         Ticket.validate_seats(
@@ -91,6 +123,7 @@ class Ticket(models.Model):
             rows=self.flight.airplane.rows,
             error_to_raise=ValidationError
         )
+        self.validate_flight()
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.full_clean()
@@ -105,5 +138,13 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    class Meta:
+        ordering = ['-created_at']
+
+    @property
+    def token(self):
+        raw = f"{self.id}-{self.created_at}".encode()
+        return hashlib.sha256(raw).hexdigest()[:10].upper()
+
     def __str__(self):
-        return f"{self.user.username} - {self.created_at}"
+        return f"{self.user.username} - {self.token}"
