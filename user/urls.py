@@ -1,7 +1,6 @@
 from django.urls import path
 
 from user.views import CreateUserView, LoginUserView, UpdateUserView
-from rest_framework.authtoken import views
 
 
 urlpatterns = [
