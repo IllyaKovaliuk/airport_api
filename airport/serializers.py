@@ -1,7 +1,15 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from airport.models import Airport, Route, Airplane, AirplaneType, Flight, Ticket, Order
+from airport.models import (
+    Airport,
+    Route,
+    Airplane,
+    AirplaneType,
+    Flight,
+    Ticket,
+    Order
+)
 from user.models import User
 
 
@@ -57,15 +65,10 @@ class AirplaneTypeSerializer(serializers.ModelSerializer):
 
 
 class AirplaneSerializer(serializers.ModelSerializer):
-    # name = serializers.PrimaryKeyRelatedField(
-    #     queryset=AirplaneType.objects.all(), write_only=True, source="airplane_type"
-    # )
     airplane_type = serializers.SlugRelatedField(
         queryset=AirplaneType.objects.all(),
         slug_field="name",
     )
-    # airplane_type_name = serializers.CharField(
-    #     source="airplane_type.name", read_only=True)
 
     class Meta:
         model = Airplane
@@ -120,9 +123,6 @@ class FlightListSerializer(FlightSerializer):
         fields = ("id", "departure_time", "arrival_time", "route_source", "route_destination", "plane", "status")
 
 
-
-
-
 class TicketSerializer(serializers.ModelSerializer):
     airplane = serializers.CharField(source="flight.airplane.name", read_only=True)
     flight = serializers.PrimaryKeyRelatedField(
@@ -173,11 +173,7 @@ class TicketSerializer(serializers.ModelSerializer):
         return attrs
 
 
-
-
-
 class OrderSerializer(serializers.ModelSerializer):
-    # tickets = TicketSerializer(many=True, read_only=False, allow_empty=False)
     token = serializers.ReadOnlyField()
     user = serializers.SlugRelatedField(
         queryset=User.objects.all(),

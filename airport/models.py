@@ -4,14 +4,12 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from django.utils.timezone import now
 from rest_framework.exceptions import ValidationError
-from datetime import datetime
 
 from airport_project import settings
 from user.models import User
 
 
 
-# Create your models here.
 class Airport(models.Model):
     name = models.CharField(max_length=255)
     closest_big_city = models.CharField(max_length=255)
@@ -78,9 +76,6 @@ class Ticket(models.Model):
     seat = models.IntegerField()
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
     order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name='tickets')
-
-    # class Meta:
-    #     ordering = ["-created_at"]
 
     constraints = [
         UniqueConstraint(fields=['seat', 'flight'], name='unique_ticket_seat_flight')

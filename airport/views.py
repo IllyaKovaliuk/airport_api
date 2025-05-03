@@ -1,14 +1,28 @@
-from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated
 
 from airport.models import Airport, Route, Airplane, AirplaneType, Flight, Ticket, Order
 from airport.permissions import IsAdminOrIsAuthenticatedReadOnly, IsAdminOrReadOnly
-from airport.serializers import AirportSerializer, AirportRetrieveSerializer, AirportListSerializer, \
-    RouteListSerializer, RouteRetrieveSerializer, RoutesSerializer, AirplaneListSerializer, AirplaneRetrieveSerializer, \
-    AirplaneSerializer, AirplaneTypeSerializer, AirplaneTypeListSerializer, AirplaneTypeRetrieveSerializer, \
-    FlightListSerializer, FlightRetrieveSerializer, FlightSerializer, TicketSerializer, OrderSerializer
+from airport.serializers import (
+    AirportSerializer,
+    AirportRetrieveSerializer,
+    AirportListSerializer,
+    RouteListSerializer,
+    RouteRetrieveSerializer,
+    RoutesSerializer,
+    AirplaneListSerializer,
+    AirplaneRetrieveSerializer,
+    AirplaneSerializer,
+    AirplaneTypeSerializer,
+    AirplaneTypeListSerializer,
+    AirplaneTypeRetrieveSerializer,
+    FlightListSerializer,
+    FlightRetrieveSerializer,
+    FlightSerializer,
+    TicketSerializer,
+    OrderSerializer
+)
 
 
 class AirportViewSet(viewsets.ModelViewSet):
@@ -36,12 +50,6 @@ class RouteViewSet(viewsets.ModelViewSet):
             return RouteRetrieveSerializer
         return RoutesSerializer
 
-
-    # def get_permissions(self):
-    #     if self.action in ["list", "retrieve"]:
-    #         return (IsAuthenticated(),)
-    #
-    #     return super().get_permissions()
 
 class AirplaneViewSet(viewsets.ModelViewSet):
     queryset = Airplane.objects.all()
