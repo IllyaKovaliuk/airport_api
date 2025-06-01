@@ -28,10 +28,10 @@ git clone https://github.com/IllyaKovaliuk/airport_api.git
 cd airport_api
 3. Create venv and activate it
 python -m venv venv
-source venv/bin/activate
-4. Install all libraries
+4. source venv/bin/activate
+5. Install all libraries
 pip install -r requirements.txt
-5. Run server
+6. Run server
 python manage.py runserver
 
 Contact
